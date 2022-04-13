@@ -1,0 +1,20 @@
+Question 2.1:
+
+For question 1 after splitting the data and changing them to lowercase, I wrote the regex expressions for finding words and numbers called reg1 and reg2.
+Then I matched these patterns with the articles in AA.
+
+Question 2.2:
+
+For this question first we need to count the words and numbers, then we should sort them and finally find the top 1000. To do so I did a map&reduce job to count them. Since we dont have sort by value in scala, first I swaped the key,value to value,key then I sorted by key then again I swaped them to key,value, and then we take th 1000 top ones for each RDD.(sort by key (false) does it in descending order) 
+Runtime for words: 23814 miliseconds which is much faster than hadoop.
+Runtime for numbers: 8971 miliseconds.
+
+Question 2.3:
+
+For this question I converted the rdd to a list which is immutable. Also I changed the rdd of words from question 2.1 to a sequence, because otherwise I would have the error of serialization. Then I filtered out all the stopwords from it. To count them again i need a map&reduce job which is not possible for lists and sequences so first we convert it to rdd and then do the map&reduce to count them.
+Run time: 62420 miliseconds
+
+Question 2.4:
+
+I did the same as above using the broadcast variable. 
+Run time: 46853 miliseconds
