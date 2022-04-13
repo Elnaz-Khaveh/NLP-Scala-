@@ -1,0 +1,75 @@
+Question2.1
+import scala.util.matching.Regex
+
+val file1 = sc.textFile("/home/elnaz/Documents/nosql/enwiki-articles/AA")
+val lower1 = file1.map(x=>x.toLowerCase)
+val result1 = lower1.flatMap(x=>x.trim.split(" "))
+
+val reg1 = """[a-z-_]*""".r
+val reg2 = """(?<=^| )\d+(\.\d+)?(?=$| )|(?<=^| )\.\d+(?=$| )""".r
+
+val findword1= result1.filter(x => (reg1.pattern.matcher(x).matches))
+findword1.collect().foreach(println)
+
+val findnumber1= result1.filter(x => (reg2.pattern.matcher(x).matches))
+findnumber1.collect().foreach(println)
+
+
+
+
+Question2.2
+import org.apache.spark.api.java.JavaSparkContext
+val file2 = spark.sparkContext.textFile("/home/elnaz/Documents/nosql/enwiki-articles/*")
+//file2.foreach(f=>{
+    println(f)
+})
+
+val lower2 = file2.map(x=>x.toLowerCase)
+val result2 = lower2.flatMap(x=>x.trim.split(" "))
+
+val startTimeMillis = System.currentTimeMillis()
+val findword2= result2.filter(x => (reg1.pattern.matcher(x).matches))
+val countword = findword2.map(word => (word, 1)).reduceByKey(_ + _)
+val sortword= countword.map(item => item.swap).sortByKey(false, 1).map(item => item.swap)
+val topwords = sortword.take(1000)
+sc.parallelize(topwords).saveAsTextFile("topwords")
+val endTimeMillis = System.currentTimeMillis()
+val durationSeconds = (endTimeMillis - startTimeMillis)
+
+
+val startTimeMillis1 = System.currentTimeMillis()
+val findnumber2= result2.filter(x => (reg2.pattern.matcher(x).matches))
+val countnumber = findnumber2.map(word => (word, 1)).reduceByKey(_ + _)
+val sortnumber= countnumber.map(item => item.swap).sortByKey(false, 1).map(item => item.swap)
+val topnumbers = sortnumber.take(1000)
+sc.parallelize(topnumbers).saveAsTextFile("topnumbers")
+val endTimeMillis1 = System.currentTimeMillis()
+val durationSeconds1 = (endTimeMillis1 - startTimeMillis1) 
+
+
+Question2.3
+
+import scala.io.Source
+val  sw= Source.fromFile("/home/elnaz/Documents/nosql/stopwords.txt")
+val stopwords1 = (for (line <- sw.getLines()) yield line).toList 
+val startTimeMillis2 = System.currentTimeMillis()
+val findwordlist = findword1.collect().toSeq // Since we had the error of serialization using rdd, so first I changed it to sequence 
+val stop1 = findwordlist.filter(z => !stopwords1.contains(z))
+val stoprdd1 = sc.parallelize(Seq(stop1)) // Again we change it to rdd in order to be able to use map reduce
+val stopcount1 = stoprdd1.map(word => (word, 1)).reduceByKey(_ + _)
+stopcount1.saveAsTextFile("stopcount1")
+val endTimeMillis2 = System.currentTimeMillis()
+val durationSeconds2 = (endTimeMillis2 - startTimeMillis2) 
+
+Question2.4
+val startTimeMillis3 = System.currentTimeMillis()
+import org.apache.spark.SparkContext
+val stopwords2 = sc.broadcast(stopwords1)
+val stop2 = findwordlist.filter(z => !stopwords2.value.contains(z))
+val stoprdd2 = sc.parallelize(Seq(stop2))
+val stopcount2 = stoprdd2.map(word => (word, 1)).reduceByKey(_ + _)
+stopcount2.saveAsTextFile("stopcount2")
+val endTimeMillis3 = System.currentTimeMillis()
+val durationSeconds3 = (endTimeMillis3 - startTimeMillis3) 
+
+
